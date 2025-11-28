@@ -12,7 +12,10 @@ import org.springframework.data.mongodb.core.aggregation.SampleOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 
 import com.question.question_service.model.Question;
+import com.question.question_service.model.QuestionWrapper;
+import com.question.question_service.model.Response;
 import com.question.question_service.repo.QuestionRepo;
+
 
 @Service
 public class QuestionService {
@@ -70,5 +73,54 @@ public class QuestionService {
 	        }
 	        return new ResponseEntity<>(new ArrayList<>(), HttpStatus.BAD_REQUEST);
 	    }
+
+
+	 public ResponseEntity<List<String>> getQuestionsForQuiz(String categoryName, Integer numQuestions) {
+		    ResponseEntity<List<Question>> response = getRandomQuestionsByCategory(categoryName, numQuestions);
+		    List<Question> questions = response.getBody();
+
+		    List<String> questionIds = new ArrayList<>();
+
+		    for (Question q : questions) {
+		        questionIds.add(q.getId().toString());  
+		    }
+
+		    return new ResponseEntity<>(questionIds, HttpStatus.OK);
+		}
+
+
+	 public ResponseEntity<List<QuestionWrapper>> getQuestionsFromId(List<String> questionIds) {
+		List<QuestionWrapper> wrappers=new ArrayList<>();
+		
+		List<Question> questions = new ArrayList<>();
+		for(String id:questionIds) {
+			questions.add(questionRepo.findById(id).get());
+		}
+		
+		for(Question question : questions) {
+			QuestionWrapper wrapper = new QuestionWrapper();
+			wrapper.setId(question.getId());
+			wrapper.setTitle(question.getTitle());
+			wrapper.setOptions(question.getOptions());
+			wrappers.add(wrapper);
+		}
+		
+		return new ResponseEntity<>(wrappers, HttpStatus.OK);
+	 }
+
+
+	 public ResponseEntity<Integer> getScore(List<Response> responses) {
+			int right=0;
+			
+			for(Response response: responses) {
+				Question question = questionRepo.findById(response.getId()).get();
+				if(response.getResponse().equals(question.getRight_answer())) {
+					right++;
+				}
+				
+			}
+			return new ResponseEntity<>(right, HttpStatus.OK);
+	 }
+     
 	
 }
